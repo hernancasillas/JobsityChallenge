@@ -5,6 +5,7 @@ export function useShows({search, sort, currentPage}) {
   const [shows, setShows] = useState([]);
   const [episodesBySeason, setEpisodesBySeason] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [firstLoading, setFirstLoading] = useState(true);
   const [error, setError] = useState(null);
   const [isPageValid, setIsPageValid] = useState(true);
 
@@ -12,6 +13,8 @@ export function useShows({search, sort, currentPage}) {
 
   const fetchShows = async ({pageNum, isNameEmpty}) => {
     console.log('I am fetching shows by page');
+    setFirstLoading(false);
+    setLoading(true);
     if (!isPageValid) {
       console.log('Estoy en el error');
       setError('There are no more shows to look for.');
@@ -19,15 +22,13 @@ export function useShows({search, sort, currentPage}) {
       return;
     }
     try {
-      setLoading(true);
-
       const response = await fetch(
         `https://api.tvmaze.com/shows?page=${pageNum}`,
       );
       console.log(`https://api.tvmaze.com/shows?page=${pageNum}`);
       const data = await response.json();
       if (data.length > 0) {
-        console.log(data);
+        //  console.log(data);
         if (!isNameEmpty) setShows(prevShows => [...prevShows, ...data]);
         else setShows(data);
       } /* else {
@@ -114,5 +115,6 @@ export function useShows({search, sort, currentPage}) {
     fetchShows,
     fetchEpisodes,
     episodesBySeason,
+    firstLoading,
   };
 }

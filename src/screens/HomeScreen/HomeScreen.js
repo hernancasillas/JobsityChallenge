@@ -7,6 +7,7 @@ import {
   ActivityIndicator,
   TouchableOpacity,
   useColorScheme,
+  SafeAreaView,
 } from 'react-native';
 import {createShadow} from '../../constants/shadow';
 import CountryFlag from 'react-native-country-flag';
@@ -17,16 +18,27 @@ import {useSearch} from '../../hooks/useSearch';
 //import debounce from 'just-debounce-it';
 import {useShows} from '../../hooks/useShows';
 import {TextInput} from 'react-native-paper';
+import {Skeleton} from 'moti/skeleton';
 export const HomeScreen = ({navigation}) => {
   const isDarkMode = useColorScheme() === 'dark';
 
-  const [loading, setLoading] = useState(false);
+  const backgroundStyle = {
+    backgroundColor: isDarkMode ? '#3b3b3b' : '#ebebeb',
+  };
+
   const [page, setPage] = useState(304);
   const [hasMore, setHasMore] = useState(true);
   const [sort, setSort] = useState(false);
 
   //const {search, updateSearch, errorOnSearch} = useSearch();
-  const {searchShowsByName, shows, fetchShows, errorOnFetch} = useShows({
+  const {
+    searchShowsByName,
+    shows,
+    fetchShows,
+    errorOnFetch,
+    loading,
+    firstLoading,
+  } = useShows({
     search,
     sort,
     page,
@@ -77,107 +89,130 @@ export const HomeScreen = ({navigation}) => {
     navigation.navigate('DetailsScreen', {show: show});
   };
 
-  const renderItem = useMemo(
-    () =>
-      ({item}) =>
-        (
-          <TouchableOpacity
-            key={item.id}
-            onPress={() => {
-              handlePress(item);
-            }}
-            style={{
-              flexDirection: 'row',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              width: '90%',
-              borderWidth: 0,
-              alignSelf: 'center',
-            }}>
-            <TouchableOpacity
-              style={[
-                {
-                  position: 'absolute',
-                  top: 8,
-                  right: 8,
+  const SkeletonCommonProps = {
+    /* transition: {
+      type: 'timing',
+      duration: 2000,
+    }, */
+  };
+
+  const renderItem = ({item}) => (
+    <Skeleton.Group show={loading && firstLoading}>
+      <TouchableOpacity
+        key={item.id}
+        onPress={() => {
+          handlePress(item);
+        }}
+        style={{
+          flexDirection: 'row',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          width: '90%',
+          borderWidth: 0,
+          alignSelf: 'center',
+        }}>
+        {/* <TouchableOpacity TODO ADD TO FAVORITES
+        style={[
+          {
+            position: 'absolute',
+            top: 18,
+            right: 8,
+            borderWidth: 0,
+            borderRadius: 20,
+            padding: 5,
+            backgroundColor: 'white',
+          },
+          createShadow(isDarkMode),
+        ]}>
+        <AntDesign name={'star'} size={20} />
+      </TouchableOpacity> */}
+        <View
+          style={{
+            flexDirection: 'row',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+          }}>
+          <Skeleton width={100} height={180} {...SkeletonCommonProps}>
+            {item.image ? (
+              <Image
+                source={{uri: item.image.medium}}
+                style={{width: 100, height: 200, resizeMode: 'contain'}}
+              />
+            ) : (
+              <View
+                style={{
+                  width: 100,
+                  height: 200,
                   borderWidth: 0,
-                  borderRadius: 20,
-                  padding: 5,
-                  backgroundColor: 'white',
-                },
-                createShadow(isDarkMode),
-              ]}>
-              <AntDesign name={'star'} size={20} />
-            </TouchableOpacity>
-            <View
-              style={{
-                flexDirection: 'row',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-              }}>
-              {item.image ? (
-                <Image
-                  source={{uri: item.image.medium}}
-                  style={{width: 100, height: 200, resizeMode: 'contain'}}
-                />
-              ) : (
-                <View
-                  style={{
-                    width: 100,
-                    height: 200,
-                    borderWidth: 0,
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                  }}>
-                  <MaterialIcons name={'image-not-supported'} size={50} />
-                </View>
-              )}
-
-              <View style={{marginHorizontal: 20}}>
-                <Text
-                  style={{
-                    fontSize: 26,
-                    fontWeight: 'bold',
-                    width: 200,
-                    borderWidth: 0,
-                  }}>
-                  {item.name}
-                </Text>
-                <Text style={{fontSize: 16}}>
-                  {item.premiered
-                    ? `${item.premiered.substring(0, 4)} - ${
-                        item.ended ? item.ended.substring(0, 4) : 'Present'
-                      }`
-                    : 'N/A'}
-                </Text>
-                {item.webChannel?.name && <Text>{item.webChannel.name}</Text>}
-                {item.network?.country?.code ||
-                item.webChannel?.country?.code ? (
-                  <CountryFlag
-                    isoCode={(
-                      item.network?.country?.code ||
-                      item.webChannel?.country?.code
-                    ).toLocaleLowerCase()}
-                    size={18}
-                    style={{borderRadius: 5, marginVertical: 5}}
-                  />
-                ) : null}
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}>
+                <MaterialIcons name={'image-not-supported'} size={50} />
               </View>
-            </View>
+            )}
+          </Skeleton>
 
-            <View style={{}}>
-              <Entypo name={'chevron-right'} size={30} />
-            </View>
-          </TouchableOpacity>
-        ),
-    [isDarkMode],
-  );
+          <View style={{marginHorizontal: 20}}>
+            <Skeleton width={200} height={30} {...SkeletonCommonProps}>
+              <Text
+                style={{
+                  fontSize: 26,
+                  fontWeight: 'bold',
+                  width: 200,
+                  borderWidth: 0,
+                }}>
+                {item.name}
+              </Text>
+            </Skeleton>
+            <Skeleton width={100} height={25} {...SkeletonCommonProps}>
+              <Text style={{fontSize: 16}}>
+                {item.premiered
+                  ? `${item.premiered.substring(0, 4)} - ${
+                      item.ended ? item.ended.substring(0, 4) : 'Present'
+                    }`
+                  : 'N/A'}
+              </Text>
+            </Skeleton>
+            {item.webChannel?.name && <Text>{item.webChannel.name}</Text>}
+            {item.network?.country?.code || item.webChannel?.country?.code ? (
+              <Skeleton width={30} height={25} {...SkeletonCommonProps}>
+                <CountryFlag
+                  isoCode={(
+                    item.network?.country?.code ||
+                    item.webChannel?.country?.code
+                  ).toLocaleLowerCase()}
+                  size={18}
+                  style={{borderRadius: 5, marginVertical: 5}}
+                />
+              </Skeleton>
+            ) : null}
+          </View>
+        </View>
+
+        <View style={{}}>
+          <Entypo name={'chevron-right'} size={30} />
+        </View>
+      </TouchableOpacity>
+    </Skeleton.Group>
+  ); //useMemo(
+  // () =>
+
+  //  [isDarkMode],
+  // );
 
   const [search, setSearch] = useState('');
   const [errorOnSearch, setOnErrorSearch] = useState(false);
   const [timeoutToClear, setTimeoutToClear] = useState();
 
+  const showsPlaceholderList = useMemo(() => {
+    return Array.from({length: 15}).map((_, index) => ({id: index + 1}));
+  }, []);
+
   useEffect(() => {
+    console.log(shows.length > 0 && !firstLoading);
+    console.log(shows.length);
+    console.log(firstLoading);
+    console.log(showsPlaceholderList);
     return () => {
       clearTimeout(timeoutToClear);
     };
@@ -196,19 +231,20 @@ export const HomeScreen = ({navigation}) => {
   const debouncedSearchShows = debounce(searchShows, setSearchTextAlways, 200);
 
   return (
-    <View style={{flex: 1, padding: 10}}>
+    <SafeAreaView style={[backgroundStyle, {flex: 1}]}>
       <TextInput
         label="Breaking Bad, The Walking Dead or their cast..."
         style={[
           {
             borderWidth: 0,
-            backgroundColor: 'white',
+
             marginTop: 40,
             marginBottom: 10,
-
+            marginHorizontal: 20,
             paddingHorizontal: 10,
           },
           createShadow(isDarkMode),
+          backgroundStyle,
         ]}
         error={errorOnSearch}
         value={search}
@@ -234,53 +270,46 @@ export const HomeScreen = ({navigation}) => {
         </View>
       )}
 
-      {loading && page === 1 ? (
-        <ActivityIndicator
-          size="large"
-          color="#0000ff"
-          style={{marginTop: 20}}
-        />
-      ) : (
-        <FlatList
-          data={shows}
-          ref={flatListRef}
-          renderItem={renderItem}
-          keyExtractor={item => item.id.toString()}
-          onEndReached={() => {
-            if (search === '') handleLoadMore;
-          }}
-          onEndReachedThreshold={0.1}
-          ListEmptyComponent={() => (
-            <View style={{alignItems: 'center'}}>
-              <Text>Oops, there are no results for {search}.</Text>
-            </View>
-          )}
-          ListFooterComponent={() => {
-            if (loading && hasMore) {
-              return (
-                <View style={{marginTop: 20}}>
-                  <ActivityIndicator size="large" color="#0000ff" />
-                </View>
-              );
-            } else if (errorOnFetch) {
-              return (
-                <TouchableOpacity
-                  onPress={() => {
-                    flatListRef.current.scrollToOffset({
-                      animated: true,
-                      offset: 0,
-                    });
-                  }}
-                  style={{alignItems: 'center', margin: 20}}>
-                  <Text style={{color: 'grey'}}>{errorOnFetch}</Text>
-                </TouchableOpacity>
-              );
-            } else {
-              return null;
-            }
-          }}
-        />
-      )}
-    </View>
+      <FlatList
+        data={shows.length > 0 && !firstLoading ? shows : showsPlaceholderList}
+        ref={flatListRef}
+        renderItem={renderItem}
+        keyExtractor={item => item.id.toString()}
+        onEndReached={() => {
+          if (search === '') handleLoadMore;
+        }}
+        maxToRenderPerBatch={25}
+        onEndReachedThreshold={0.1}
+        /* ListEmptyComponent={() => (
+          <View style={{alignItems: 'center'}}>
+            <Text>Oops, there are no results for {search}.</Text>
+          </View>
+        )} */
+        /* ListFooterComponent={() => {
+          if (loading && hasMore) {
+            return (
+              <View style={{marginTop: 20}}>
+                <ActivityIndicator size="large" color="#0000ff" />
+              </View>
+            );
+          } else if (errorOnFetch) {
+            return (
+              <TouchableOpacity
+                onPress={() => {
+                  flatListRef.current.scrollToOffset({
+                    animated: true,
+                    offset: 0,
+                  });
+                }}
+                style={{alignItems: 'center', margin: 20}}>
+                <Text style={{color: 'grey'}}>{errorOnFetch}</Text>
+              </TouchableOpacity>
+            );
+          } else {
+            return null;
+          }
+        }} */
+      />
+    </SafeAreaView>
   );
 };
