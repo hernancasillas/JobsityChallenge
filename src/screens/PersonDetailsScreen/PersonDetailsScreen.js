@@ -87,17 +87,6 @@ export const PersonDetailsScreen = ({navigation, route}) => {
               <Entypo name={'chevron-left'} color={'white'} size={30} />
               <Text style={{fontSize: 16}}>{'Home'}</Text>
             </TouchableOpacity>
-            {!loading && (
-              <TouchableOpacity
-                style={{marginHorizontal: 20}}
-                onPress={handleToggleFavorite}>
-                <AntDesign
-                  name={isFavorite ? 'star' : 'staro'}
-                  size={24}
-                  color={Colors.star}
-                />
-              </TouchableOpacity>
-            )}
           </View>
           <Text
             style={{
@@ -118,26 +107,11 @@ export const PersonDetailsScreen = ({navigation, route}) => {
             {person.image && !personImageNotFound && (
               <Image
                 source={{uri: person.image.medium}}
-                style={{width: 100, height: 200, resizeMode: 'contain'}}
+                style={{width: 200, height: 200, resizeMode: 'contain'}}
                 onLoad={() => setShowImageNotFound(false)}
                 onError={() => setShowImageNotFound(true)}
               />
             )}
-
-            <View
-              style={{
-                width: person.image ? '60%' : '100%',
-
-                borderWidth: 0,
-              }}>
-              <Text
-                style={{width: '100%', marginTop: 5, borderWidth: 0}}
-                numberOfLines={10}>
-                {person.summary
-                  ? removeHtmlTags(person.summary)
-                  : "This person doesn't have a summary."}
-              </Text>
-            </View>
           </View>
           <Text style={{fontSize: 16, marginLeft: 20}}>
             {person.birthday
@@ -161,44 +135,45 @@ export const PersonDetailsScreen = ({navigation, route}) => {
                 setShowCast(true);
               }}
               style={{
-                borderWidth: 1,
+                borderWidth: showCast ? 1 : 0,
                 borderRadius: 10,
+                borderColor: showCast ? Colors.star : null,
                 width: '40%',
                 alignItems: 'center',
               }}>
-              <Text style={{padding: 15, fontSize: 20}}>Cast</Text>
+              <Text
+                style={{
+                  paddingHorizontal: 15,
+                  paddingVertical: 10,
+                  fontSize: 20,
+                }}>
+                Cast
+              </Text>
             </TouchableOpacity>
             <TouchableOpacity
               onPress={() => {
                 setShowCast(false);
               }}
               style={{
-                borderWidth: 1,
+                borderWidth: showCast ? 0 : 1,
                 borderRadius: 10,
+                borderColor: showCast ? null : Colors.star,
                 width: '40%',
                 alignItems: 'center',
               }}>
-              <Text style={{padding: 15, fontSize: 20}}>Crew</Text>
+              <Text
+                style={{
+                  paddingHorizontal: 15,
+                  paddingVertical: 10,
+                  fontSize: 20,
+                }}>
+                Crew
+              </Text>
             </TouchableOpacity>
           </View>
-          <Text
-            style={{
-              fontWeight: 'bold',
-              fontSize: 30,
-              marginLeft: 20,
-              marginVertical: 20,
-            }}>
-            {showCast ? 'CAST' : 'CREW'}
-            {/* <Text
-              style={{
-                fontWeight: 'normal',
-                fontSize: 18,
-                color: 'grey',
-              }}>
-              {numberOfEpisodes}
-            </Text> */}
-          </Text>
-          {!loading && showCast && castCredits.length > 0 ? (
+
+          {showCast &&
+            castCredits.length > 0 &&
             castCredits.map(episode => (
               <TouchableOpacity
                 key={episode.id}
@@ -210,15 +185,14 @@ export const PersonDetailsScreen = ({navigation, route}) => {
                   paddingHorizontal: 20,
                   width: '100%',
                   borderWidth: 0,
+                  marginTop: 20,
                 }}
                 onPress={() => {
-                  console.log(episode);
                   navigation.navigate('DetailsScreen', {
                     id: getShowId(episode._links.show.href),
                   });
                 }}>
                 <View style={{width: '80%'}}>
-                  <Text>{getShowId(episode._links.show.href)}</Text>
                   <Text style={{fontWeight: 'bold', fontSize: 18}}>
                     {episode._links.show.name}
                   </Text>
@@ -235,13 +209,9 @@ export const PersonDetailsScreen = ({navigation, route}) => {
                   <Entypo name={'chevron-right'} size={30} />
                 </View>
               </TouchableOpacity>
-            ))
-          ) : (
-            <View>
-              <ActivityIndicator />
-            </View>
-          )}
-          {!loading && !showCast && crewCredits.length > 0 ? (
+            ))}
+          {!showCast &&
+            crewCredits.length > 0 &&
             crewCredits.map(episode => (
               <TouchableOpacity
                 key={episode.id}
@@ -253,15 +223,14 @@ export const PersonDetailsScreen = ({navigation, route}) => {
                   paddingHorizontal: 20,
                   width: '100%',
                   borderWidth: 0,
+                  marginTop: 20,
                 }}
                 onPress={() => {
-                  console.log(episode);
                   navigation.navigate('DetailsScreen', {
                     id: getShowId(episode._links.show.href),
                   });
                 }}>
                 <View style={{width: '80%'}}>
-                  <Text>{getShowId(episode._links.show.href)}</Text>
                   <Text style={{fontWeight: 'bold', fontSize: 18}}>
                     {episode._links.show.name}
                   </Text>
@@ -276,12 +245,7 @@ export const PersonDetailsScreen = ({navigation, route}) => {
                   <Entypo name={'chevron-right'} size={30} />
                 </View>
               </TouchableOpacity>
-            ))
-          ) : (
-            <View>
-              <ActivityIndicator />
-            </View>
-          )}
+            ))}
         </View>
         <View style={{height: 60}} />
       </ScrollView>

@@ -39,24 +39,18 @@ function App() {
   useEffect(() => {
     async function checkIfPinSet() {
       try {
-        // Verificar si el PIN ha sido establecido previamente
         const pinSet = await storage.getString(PIN_SET_KEY);
         const pinesito = await storage.getString(PIN_KEY);
-        console.log(`get pinSet en ${PIN_SET_KEY} ${pinSet}`);
-        console.log(`get pinesito en ${PIN_KEY} ${pinesito}`);
+
         if (!pinSet) {
-          // Si el PIN no ha sido establecido, mostrar la pantalla de establecimiento de PIN
-          console.log('NO TIENE PIN');
           setPinVisible(true);
           setPinMode(PinCodeT.Modes.Set);
         } else {
-          // Si el PIN ya ha sido establecido, mostrar la pantalla de ingreso de PIN
-          console.log('SI TIENE PIN');
           setPinVisible(true);
           setPinMode(PinCodeT.Modes.Enter);
         }
       } catch (error) {
-        console.error('Error al verificar si el PIN está establecido:', error);
+        console.error('Error:', error);
       }
     }
 
@@ -65,14 +59,11 @@ function App() {
 
   async function setPin(newPin) {
     try {
-      // Verificar si el PIN ha sido establecido previamente
-      console.log(`SETTING IN ${PIN_KEY}`, newPin);
-      console.log(`SETTING IN ${PIN_SET_KEY}`, true);
       storage.set(PIN_KEY, newPin);
       storage.set(PIN_SET_KEY, JSON.stringify(true));
       setPinVisible(false);
     } catch (error) {
-      console.error('Error al verificar si el PIN está establecido:', error);
+      console.error('Error:', error);
     }
   }
 

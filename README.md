@@ -4,6 +4,10 @@ JobsityChallenge is a mobile application developed in React Native.
 
 ## Getting Started
 
+Just install the app that is on the dist folder :)
+
+## Or compile it yourself but that's boring
+
 ```
 node v20.12.1
 ```

@@ -1,4 +1,4 @@
-import React, {useState, useMemo, useRef, useCallback} from 'react';
+import React, {useState, useMemo, useRef} from 'react';
 import {
   View,
   Text,
@@ -16,7 +16,6 @@ import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityI
 import {Checkbox} from 'react-native-paper';
 import {useShowsContext} from '../../context/ShowsContext';
 import Colors from '../../constants/colors';
-import {useFocusEffect} from '@react-navigation/native';
 
 export const FavoritesScreen = ({navigation, route}) => {
   const isDarkMode = useColorScheme() === 'dark';
@@ -29,22 +28,11 @@ export const FavoritesScreen = ({navigation, route}) => {
   const [showImageNotFound, setShowImageNotFound] = useState(false);
   const [sortedFavorites, setSortedFavorites] = useState([]);
 
-  useFocusEffect(
-    useCallback(() => {
-      // Screen is focused
-
-      const previousScreen = route.state?.history[route.state?.index - 1]?.name;
-      console.log('La pantalla anterior fue:', previousScreen);
-      //setSort(false);
-    }, []),
-  );
-
   const {favorites} = useShowsContext();
 
   const flatListRef = useRef(null);
 
   const handlePress = show => {
-    console.log(show);
     navigation.navigate('FavoritesDetailsScreen', {show: show});
   };
 
@@ -55,10 +43,6 @@ export const FavoritesScreen = ({navigation, route}) => {
         a.name.localeCompare(b.name),
       );
 
-      // Actualiza el estado de favorites con los favoritos ordenados alfabéticamente
-      // Esto asumiría que setIsSorted setea el estado isSorted en el hook useShowsContext
-      // Si setIsSorted no existe o no se necesita, puedes eliminar esa parte
-      // Y simplemente actualizar el estado de favorites con los favoritos ordenados
       setSortedFavorites(newSortedFavorites);
     }
   };
@@ -67,14 +51,6 @@ export const FavoritesScreen = ({navigation, route}) => {
     () =>
       ({item}) => {
         const isFavorite = favorites.some(favorite => favorite.id === item.id);
-
-        const handleToggleFavorite = () => {
-          if (isFavorite) {
-            removeFromFavorites(item.id);
-          } else {
-            addToFavorites(item);
-          }
-        };
 
         return (
           <TouchableOpacity

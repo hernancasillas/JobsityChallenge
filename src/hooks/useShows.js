@@ -1,44 +1,40 @@
-import {useRef, useState, useCallback, useMemo} from 'react';
+import {useRef, useState, useMemo} from 'react';
 // TODO SERVICE FOR SHOWS import {searchShows, getShowsByPage} from '../services/shows';
 export function useShows({search, sort, currentPage}) {
   const [shows, setShows] = useState([]);
   const [show, setShow] = useState({});
   const [episodesBySeason, setEpisodesBySeason] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoadingShow] = useState(true);
   const [firstLoading, setFirstLoading] = useState(true);
   const [error, setError] = useState(null);
   const [isPageValid, setIsPageValid] = useState(true);
+  const [numberOfEpisodes, setNumberOfEpisodes] = useState(0);
 
   const previousSearch = useRef(search);
 
   const fetchShows = async ({pageNum, isNameEmpty}) => {
-    console.log('I am fetching shows by page');
     setFirstLoading(false);
-    setLoading(true);
+    setLoadingShow(true);
     if (!isPageValid) {
-      console.log('Estoy en el error');
       setError('There are no more shows to look for.');
-      //Alert.alert('Reached end');
+
       return;
     }
     try {
       const response = await fetch(
         `https://api.tvmaze.com/shows?page=${pageNum}`,
       );
-      console.log(`https://api.tvmaze.com/shows?page=${pageNum}`);
+
       const data = await response.json();
       if (data.length > 0) {
-        //  console.log(data);
         if (!isNameEmpty) setShows(prevShows => [...prevShows, ...data]);
         else setShows(data);
-      } /* else {
-        setIsPageValid(false);
-      } */
+      }
 
-      setLoading(false);
+      setLoadingShow(false);
     } catch (error) {
       console.error('Error fetching shows:', error);
-      setLoading(false);
+      setLoadingShow(false);
     }
   };
 
@@ -53,29 +49,35 @@ export function useShows({search, sort, currentPage}) {
     }, {});
   };
 
-  const fetchEpisodes = async ({id}) => {
-    console.log('I am fetching episodes');
+  const groupEpisodesBySeasonFromEmbedded = episodes => {
+    return episodes.reduce((acc, episode) => {
+      const season = episode.season;
+      if (!acc[season]) {
+        acc[season] = [];
+      }
+      acc[season].push(episode);
+      return acc;
+    }, {});
+  };
 
+  const fetchEpisodes = async ({id}) => {
     try {
-      setLoading(true);
+      setLoadingShow(true);
 
       const response = await fetch(
         `https://api.tvmaze.com/shows/${id}/episodes`,
       );
-      console.log(`https://api.tvmaze.com/shows/${id}/episodes`);
+
       const data = await response.json();
       if (data.length > 0) {
-        //console.log(data);
-        const groupedEpisodes = groupEpisodesBySeason(data); // Llamada a la función para agrupar episodios por temporada
+        const groupedEpisodes = groupEpisodesBySeason(data);
         setEpisodesBySeason(groupedEpisodes);
-      } /* else {
-        setIsPageValid(false);
-      } */
+      }
 
-      setLoading(false);
+      setLoadingShow(false);
     } catch (error) {
       console.error('Error fetching shows:', error);
-      setLoading(false);
+      setLoadingShow(false);
     }
   };
 
@@ -83,41 +85,44 @@ export function useShows({search, sort, currentPage}) {
     if (search === previousSearch.current) return;
 
     try {
-      setLoading(true);
+      setLoadingShow(true);
       const response = await fetch(
         `https://api.tvmaze.com/search/shows?q=${search}`,
       );
       previousSearch.current = search;
-      console.log(
-        `Voy a buscar en searchShowsByName ===> https://api.tvmaze.com/search/shows?q=${search}`,
-      );
+
       const data = await response.json();
-      // console.log(data.map(entry => entry.show));
+
       setShows(data.map(entry => entry.show));
-      setLoading(false);
+      setLoadingShow(false);
     } catch (error) {
       console.error('Error searching shows:', error);
-      setLoading(false);
+      setLoadingShow(false);
     }
   };
 
   const fetchShowById = async ({search}) => {
     try {
-      setLoading(true);
+      setLoadingShow(true);
       const response = await fetch(
-        `https://api.tvmaze.com/search/shows?q=${search}`,
+        `https://api.tvmaze.com/shows/${search}?embed=episodes`,
       );
       previousSearch.current = search;
-      console.log(
-        `Voy a buscar en fetchShowById ===> https://api.tvmaze.com/shows/${search}?embed=episodes`,
-      );
+
       const data = await response.json();
-      console.log(data);
+
+      const groupedEpisodes = groupEpisodesBySeasonFromEmbedded(
+        data._embedded.episodes,
+      );
+
+      setNumberOfEpisodes(data._embedded.episodes.length);
+      setEpisodesBySeason(groupedEpisodes);
+
       setShow(data);
-      setLoading(false);
+      setLoadingShow(false);
     } catch (error) {
       console.error('Error searching shows:', error);
-      setLoading(false);
+      setLoadingShow(false);
     }
   };
 
@@ -128,15 +133,17 @@ export function useShows({search, sort, currentPage}) {
   }, [sort, shows]);
 
   return {
-    loading,
+    loadingShow: loading,
     errorOnFetch: error,
     shows,
     searchShowsByName,
     fetchShows,
     fetchEpisodes,
     fetchShowById,
+    setLoadingShow,
     showById: show,
-    episodesBySeason,
+    episodesBySeasonFromShow: episodesBySeason,
     firstLoading,
+    numberOfEpisodesFromShow: numberOfEpisodes,
   };
 }

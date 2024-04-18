@@ -6,16 +6,12 @@ import {
   StatusBar,
   ScrollView,
   useColorScheme,
-  Image,
   ImageBackground,
   TouchableOpacity,
 } from 'react-native';
-import React, {useEffect} from 'react';
-import {Card} from 'react-native-paper';
+import React from 'react';
 import moment from 'moment';
-import {useEpisodes} from '../../hooks/useEpisodes';
 import AntDesign from 'react-native-vector-icons/AntDesign';
-import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import Entypo from 'react-native-vector-icons/Entypo';
 import Colors from '../../constants/colors';
 import LinearGradient from 'react-native-linear-gradient';

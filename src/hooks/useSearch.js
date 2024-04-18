@@ -7,7 +7,6 @@ export function useSearch() {
   const isFirstInput = useRef(true);
 
   useEffect(() => {
-    console.log('SEARCH ON HOOK ====> ', search);
     if (isFirstInput.current) {
       isFirstInput.current = search === '';
       return;

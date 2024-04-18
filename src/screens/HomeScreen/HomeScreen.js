@@ -1,4 +1,4 @@
-import React, {useState, useEffect, useCallback, useMemo, useRef} from 'react';
+import React, {useState, useEffect, useMemo, useRef} from 'react';
 import {
   View,
   Text,
@@ -15,8 +15,6 @@ import Entypo from 'react-native-vector-icons/Entypo';
 import AntDesign from 'react-native-vector-icons/AntDesign';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
-import {useSearch} from '../../hooks/useSearch';
-//import debounce from 'just-debounce-it';
 import {useShows} from '../../hooks/useShows';
 import {Checkbox, TextInput} from 'react-native-paper';
 import {useShowsContext} from '../../context/ShowsContext';
@@ -36,20 +34,17 @@ export const HomeScreen = ({navigation}) => {
   const [sort, setSort] = useState(false);
   const [showImageNotFound, setShowImageNotFound] = useState(false);
   const [searchPeople, setSearchPeople] = useState(false);
+  const [search, setSearch] = useState('');
+  const [errorOnSearch, setOnErrorSearch] = useState(false);
+  const [timeoutToClear, setTimeoutToClear] = useState();
 
   //const {search, updateSearch, errorOnSearch} = useSearch();
-  const {
-    searchShowsByName,
-    shows,
-    fetchShows,
-    errorOnFetch,
-    loading,
-    firstLoading,
-  } = useShows({
-    search,
-    sort,
-    page,
-  });
+  const {searchShowsByName, shows, fetchShows, errorOnFetch, loading} =
+    useShows({
+      search,
+      sort,
+      page,
+    });
 
   const {fetchPeople, people} = usePeople({search});
 
@@ -69,57 +64,79 @@ export const HomeScreen = ({navigation}) => {
 
   const flatListRef = useRef(null);
 
-  const handleLoadMore = () => {
-    console.log('loadingMore');
-    if (!loading && hasMore && search === '') {
-      setPage(prevPage => prevPage + 1);
-    }
-  };
+  //Used for the debounce functionality
+  useEffect(() => {
+    return () => {
+      clearTimeout(timeoutToClear);
+    };
+  }, []);
 
   useEffect(() => {
     fetchShows({pageNum: page});
   }, [page]);
 
-  const handleChange = text => {
-    console.log('handleChange ===> ', text);
+  const setSearchTextAlways = text => {
+    setSearch(text);
+  };
 
+  const searchShows = async text => {
+    setSearch(text);
+    searchShowsByName({search: text});
+  };
+
+  const searchPeopleFn = async text => {
+    setSearch(text);
+    fetchPeople({search: text});
+  };
+
+  const debouncedSearchShows = debounce(searchShows, setSearchTextAlways, 200);
+  const debouncedSearchPeople = debounce(
+    searchPeopleFn,
+    setSearchTextAlways,
+    200,
+  );
+
+  const handleLoadMore = () => {
+    if (!loading && hasMore && search === '') {
+      setPage(prevPage => prevPage + 1);
+    }
+  };
+
+  const handleChange = text => {
     if (text === '') {
-      console.log('dentro del if text ===== ', text);
       setSearch('');
-      if (!searchPeople) fetchShows({pageNum: page, isNameEmpty: true});
+      if (!searchPeople) {
+        fetchShows({pageNum: page, isNameEmpty: true});
+      }
 
       return;
     }
     const newSearch = text;
 
     //searchShowsByName({search});
-    if (!searchPeople) debouncedSearchShows(newSearch);
-    else debouncedSearchPeople(newSearch);
+    if (!searchPeople) {
+      debouncedSearchShows(newSearch);
+    } else {
+      debouncedSearchPeople(newSearch);
+    }
   };
 
   const handlePressShow = show => {
-    console.log(show);
-
     navigation.navigate('DetailsScreen', {show: show});
   };
   const handlePressPerson = person => {
-    console.log(person);
-
     navigation.navigate('PersonDetailsScreen', {person: person});
+  };
+
+  const handleCheckboxChange = () => {
+    setSearch('');
+    setSearchPeople(!searchPeople);
   };
 
   const renderItem = useMemo(
     () =>
       ({item}) => {
         const isFavorite = favorites.some(favorite => favorite.id === item.id);
-
-        const handleToggleFavorite = () => {
-          if (isFavorite) {
-            removeFromFavorites(item.id);
-          } else {
-            addToFavorites(item);
-          }
-        };
 
         return (
           <TouchableOpacity
@@ -215,14 +232,6 @@ export const HomeScreen = ({navigation}) => {
       ({item}) => {
         const isFavorite = favorites.some(favorite => favorite.id === item.id);
 
-        const handleToggleFavorite = () => {
-          if (isFavorite) {
-            removeFromFavorites(item.id);
-          } else {
-            addToFavorites(item);
-          }
-        };
-
         return (
           <TouchableOpacity
             key={item.id}
@@ -303,48 +312,6 @@ export const HomeScreen = ({navigation}) => {
     [favorites, isDarkMode],
   );
 
-  const [search, setSearch] = useState('');
-  const [errorOnSearch, setOnErrorSearch] = useState(false);
-  const [timeoutToClear, setTimeoutToClear] = useState();
-
-  const showsPlaceholderList = useMemo(() => {
-    return Array.from({length: 15}).map((_, index) => ({id: index + 1}));
-  }, []);
-
-  useEffect(() => {
-    return () => {
-      clearTimeout(timeoutToClear);
-    };
-  }, []);
-
-  const setSearchTextAlways = text => {
-    setSearch(text);
-  };
-
-  const searchShows = async text => {
-    console.log('ready to searchShows text ===>', text);
-    setSearch(text);
-    searchShowsByName({search: text});
-  };
-
-  const searchPeopleFn = async text => {
-    console.log('ready to searchPeople text ===>', text);
-    setSearch(text);
-    fetchPeople({search: text});
-  };
-
-  const debouncedSearchShows = debounce(searchShows, setSearchTextAlways, 200);
-  const debouncedSearchPeople = debounce(
-    searchPeopleFn,
-    setSearchTextAlways,
-    200,
-  );
-
-  const handleCheckboxChange = () => {
-    setSearch('');
-    setSearchPeople(!searchPeople);
-  };
-
   return (
     <SafeAreaView style={[backgroundStyle, {flex: 1}]}>
       <View
@@ -420,16 +387,19 @@ export const HomeScreen = ({navigation}) => {
         renderItem={!searchPeople ? renderItem : renderPerson}
         keyExtractor={item => item.id.toString()}
         onEndReached={() => {
-          console.log('onEndReached');
-          if (search === '' && !searchPeople) {
+          if (search === '' && !searchPeople && !loading) {
             handleLoadMore();
-          } else console.log('el search parece no estar vacio ', search);
+          }
         }}
         maxToRenderPerBatch={25}
         onEndReachedThreshold={0.1}
         ListEmptyComponent={() => (
           <View style={{alignItems: 'center'}}>
-            <Text>Oops, there are no results for {search}.</Text>
+            <Text>
+              {!searchPeople
+                ? `Oops, there are no results for ${search}.`
+                : `There are no results yet.`}
+            </Text>
           </View>
         )}
         ListFooterComponent={() => {

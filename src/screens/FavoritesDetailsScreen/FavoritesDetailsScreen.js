@@ -192,7 +192,6 @@ export const FavoritesDetailsScreen = ({navigation, route}) => {
                       padding: 10,
                     }}
                     onPress={() => {
-                      console.log(episode);
                       navigation.navigate('FavoritesEpisodeScreen', {
                         episode: episode,
                       });

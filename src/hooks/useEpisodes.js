@@ -18,28 +18,22 @@ export function useEpisodes() {
   };
 
   const fetchEpisodes = async ({id}) => {
-    console.log('I am fetching episodes');
-
     try {
       setLoading(true);
 
       const response = await fetch(
         `https://api.tvmaze.com/shows/${id}/episodes`,
       );
-      console.log(`https://api.tvmaze.com/shows/${id}/episodes`);
+
       const data = await response.json();
       if (data.length > 0) {
-        console.log(data);
         setNumberOfEpisodes(data.length);
-        const groupedEpisodes = groupEpisodesBySeason(data); // Llamada a la función para agrupar episodios por temporada
+        const groupedEpisodes = groupEpisodesBySeason(data);
         setEpisodesBySeason(groupedEpisodes);
-      } /* else {
-        setIsPageValid(false);
-      } */
+      }
 
       setLoading(false);
     } catch (e) {
-      console.error('Error fetching shows:', e);
       setError(e);
       setLoading(false);
     }
@@ -51,5 +45,6 @@ export function useEpisodes() {
     fetchEpisodes,
     episodesBySeason,
     numberOfEpisodes,
+    setLoading,
   };
 }
