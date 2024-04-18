@@ -14,11 +14,16 @@ import CountryFlag from 'react-native-country-flag';
 import Entypo from 'react-native-vector-icons/Entypo';
 import AntDesign from 'react-native-vector-icons/AntDesign';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
+import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import {useSearch} from '../../hooks/useSearch';
 //import debounce from 'just-debounce-it';
 import {useShows} from '../../hooks/useShows';
-import {TextInput} from 'react-native-paper';
-import {Skeleton} from 'moti/skeleton';
+import {Checkbox, TextInput} from 'react-native-paper';
+import {useShowsContext} from '../../context/ShowsContext';
+import Colors from '../../constants/colors';
+import {usePeople} from '../../hooks/usePeople';
+import moment from 'moment';
+
 export const HomeScreen = ({navigation}) => {
   const isDarkMode = useColorScheme() === 'dark';
 
@@ -26,9 +31,11 @@ export const HomeScreen = ({navigation}) => {
     backgroundColor: isDarkMode ? '#3b3b3b' : '#ebebeb',
   };
 
-  const [page, setPage] = useState(304);
+  const [page, setPage] = useState(0);
   const [hasMore, setHasMore] = useState(true);
   const [sort, setSort] = useState(false);
+  const [showImageNotFound, setShowImageNotFound] = useState(false);
+  const [searchPeople, setSearchPeople] = useState(false);
 
   //const {search, updateSearch, errorOnSearch} = useSearch();
   const {
@@ -43,6 +50,10 @@ export const HomeScreen = ({navigation}) => {
     sort,
     page,
   });
+
+  const {fetchPeople, people} = usePeople({search});
+
+  const {favorites} = useShowsContext();
 
   const debounce = (callback, alwaysCall, ms) => {
     return (...args) => {
@@ -59,6 +70,7 @@ export const HomeScreen = ({navigation}) => {
   const flatListRef = useRef(null);
 
   const handleLoadMore = () => {
+    console.log('loadingMore');
     if (!loading && hasMore && search === '') {
       setPage(prevPage => prevPage + 1);
     }
@@ -74,131 +86,222 @@ export const HomeScreen = ({navigation}) => {
     if (text === '') {
       console.log('dentro del if text ===== ', text);
       setSearch('');
-      fetchShows({pageNum: page, isNameEmpty: true});
+      if (!searchPeople) fetchShows({pageNum: page, isNameEmpty: true});
 
       return;
     }
     const newSearch = text;
 
     //searchShowsByName({search});
-    debouncedSearchShows(newSearch);
+    if (!searchPeople) debouncedSearchShows(newSearch);
+    else debouncedSearchPeople(newSearch);
   };
 
-  const handlePress = show => {
+  const handlePressShow = show => {
     console.log(show);
+
     navigation.navigate('DetailsScreen', {show: show});
   };
+  const handlePressPerson = person => {
+    console.log(person);
 
-  const SkeletonCommonProps = {
-    /* transition: {
-      type: 'timing',
-      duration: 2000,
-    }, */
+    navigation.navigate('PersonDetailsScreen', {person: person});
   };
 
-  const renderItem = ({item}) => (
-    <Skeleton.Group show={loading && firstLoading}>
-      <TouchableOpacity
-        key={item.id}
-        onPress={() => {
-          handlePress(item);
-        }}
-        style={{
-          flexDirection: 'row',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          width: '90%',
-          borderWidth: 0,
-          alignSelf: 'center',
-        }}>
-        {/* <TouchableOpacity TODO ADD TO FAVORITES
-        style={[
-          {
-            position: 'absolute',
-            top: 18,
-            right: 8,
-            borderWidth: 0,
-            borderRadius: 20,
-            padding: 5,
-            backgroundColor: 'white',
-          },
-          createShadow(isDarkMode),
-        ]}>
-        <AntDesign name={'star'} size={20} />
-      </TouchableOpacity> */}
-        <View
-          style={{
-            flexDirection: 'row',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-          }}>
-          <Skeleton width={100} height={180} {...SkeletonCommonProps}>
-            {item.image ? (
-              <Image
-                source={{uri: item.image.medium}}
-                style={{width: 100, height: 200, resizeMode: 'contain'}}
+  const renderItem = useMemo(
+    () =>
+      ({item}) => {
+        const isFavorite = favorites.some(favorite => favorite.id === item.id);
+
+        const handleToggleFavorite = () => {
+          if (isFavorite) {
+            removeFromFavorites(item.id);
+          } else {
+            addToFavorites(item);
+          }
+        };
+
+        return (
+          <TouchableOpacity
+            key={item.id}
+            onPress={() => {
+              handlePressShow(item);
+            }}
+            style={{
+              flexDirection: 'row',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              width: '90%',
+              borderWidth: 0,
+              alignSelf: 'center',
+            }}>
+            <View style={{position: 'absolute', top: 30, right: 0}}>
+              <AntDesign
+                name={isFavorite ? 'star' : 'staro'}
+                size={24}
+                color={isFavorite ? Colors.star : null}
               />
-            ) : (
-              <View
-                style={{
-                  width: 100,
-                  height: 200,
-                  borderWidth: 0,
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                }}>
-                <MaterialIcons name={'image-not-supported'} size={50} />
-              </View>
-            )}
-          </Skeleton>
-
-          <View style={{marginHorizontal: 20}}>
-            <Skeleton width={200} height={30} {...SkeletonCommonProps}>
-              <Text
-                style={{
-                  fontSize: 26,
-                  fontWeight: 'bold',
-                  width: 200,
-                  borderWidth: 0,
-                }}>
-                {item.name}
-              </Text>
-            </Skeleton>
-            <Skeleton width={100} height={25} {...SkeletonCommonProps}>
-              <Text style={{fontSize: 16}}>
-                {item.premiered
-                  ? `${item.premiered.substring(0, 4)} - ${
-                      item.ended ? item.ended.substring(0, 4) : 'Present'
-                    }`
-                  : 'N/A'}
-              </Text>
-            </Skeleton>
-            {item.webChannel?.name && <Text>{item.webChannel.name}</Text>}
-            {item.network?.country?.code || item.webChannel?.country?.code ? (
-              <Skeleton width={30} height={25} {...SkeletonCommonProps}>
-                <CountryFlag
-                  isoCode={(
-                    item.network?.country?.code ||
-                    item.webChannel?.country?.code
-                  ).toLocaleLowerCase()}
-                  size={18}
-                  style={{borderRadius: 5, marginVertical: 5}}
+            </View>
+            <View
+              style={{
+                flexDirection: 'row',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+              }}>
+              {item.image && !showImageNotFound ? (
+                <Image
+                  source={{uri: item.image.medium}}
+                  style={{width: 100, height: 200, resizeMode: 'contain'}}
+                  onLoad={() => setShowImageNotFound(false)}
+                  onError={() => setShowImageNotFound(true)}
                 />
-              </Skeleton>
-            ) : null}
-          </View>
-        </View>
+              ) : (
+                <View
+                  style={{
+                    width: 100,
+                    height: 200,
+                    borderWidth: 0,
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                  }}>
+                  <MaterialIcons name={'image-not-supported'} size={50} />
+                </View>
+              )}
 
-        <View style={{}}>
-          <Entypo name={'chevron-right'} size={30} />
-        </View>
-      </TouchableOpacity>
-    </Skeleton.Group>
-  ); //useMemo(
-  // () =>
+              <View style={{marginHorizontal: 20}}>
+                <Text
+                  style={{
+                    fontSize: 26,
+                    fontWeight: 'bold',
+                    width: 200,
+                    borderWidth: 0,
+                  }}>
+                  {item.name}
+                </Text>
 
-  //  [isDarkMode],
-  // );
+                <Text style={{fontSize: 16}}>
+                  {item.premiered
+                    ? `${item.premiered.substring(0, 4)} - ${
+                        item.ended ? item.ended.substring(0, 4) : 'Present'
+                      }`
+                    : 'N/A'}
+                </Text>
+
+                {item.webChannel?.name && <Text>{item.webChannel.name}</Text>}
+                {item.network?.country?.code ||
+                item.webChannel?.country?.code ? (
+                  <CountryFlag
+                    isoCode={(
+                      item.network?.country?.code ||
+                      item.webChannel?.country?.code
+                    ).toLocaleLowerCase()}
+                    size={18}
+                    style={{borderRadius: 5, marginVertical: 5}}
+                  />
+                ) : null}
+              </View>
+            </View>
+
+            <View style={{}}>
+              <Entypo name={'chevron-right'} size={30} />
+            </View>
+          </TouchableOpacity>
+        );
+      },
+    [favorites, isDarkMode],
+  );
+  const renderPerson = useMemo(
+    () =>
+      ({item}) => {
+        const isFavorite = favorites.some(favorite => favorite.id === item.id);
+
+        const handleToggleFavorite = () => {
+          if (isFavorite) {
+            removeFromFavorites(item.id);
+          } else {
+            addToFavorites(item);
+          }
+        };
+
+        return (
+          <TouchableOpacity
+            key={item.id}
+            onPress={() => {
+              handlePressPerson(item);
+            }}
+            style={{
+              flexDirection: 'row',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              width: '90%',
+              borderWidth: 0,
+              alignSelf: 'center',
+            }}>
+            <View
+              style={{
+                flexDirection: 'row',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+              }}>
+              {item.image && !showImageNotFound ? (
+                <Image
+                  source={{uri: item.image.medium}}
+                  style={{width: 100, height: 200, resizeMode: 'contain'}}
+                  onLoad={() => setShowImageNotFound(false)}
+                  onError={() => setShowImageNotFound(true)}
+                />
+              ) : (
+                <View
+                  style={{
+                    width: 100,
+                    height: 200,
+                    borderWidth: 0,
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                  }}>
+                  <MaterialIcons name={'image-not-supported'} size={50} />
+                </View>
+              )}
+
+              <View style={{marginHorizontal: 20}}>
+                <Text
+                  style={{
+                    fontSize: 26,
+                    fontWeight: 'bold',
+                    width: 200,
+                    borderWidth: 0,
+                  }}>
+                  {item.name}
+                </Text>
+
+                <Text style={{fontSize: 16}}>
+                  {item.birthday
+                    ? item.deathday
+                      ? `${moment(item.birthday).format(
+                          'MMM DD, YYYY',
+                        )} - ${moment(item.deathday).format('MMM DD, YYYY')}`
+                      : `${moment(item.birthday).format('MMM DD, YYYY')}`
+                    : 'N/A'}
+                </Text>
+
+                {item.country?.code && (
+                  <CountryFlag
+                    isoCode={(item.country?.code).toLocaleLowerCase()}
+                    size={18}
+                    style={{borderRadius: 5, marginVertical: 5}}
+                  />
+                )}
+              </View>
+            </View>
+
+            <View style={{}}>
+              <Entypo name={'chevron-right'} size={30} />
+            </View>
+          </TouchableOpacity>
+        );
+      },
+    [favorites, isDarkMode],
+  );
 
   const [search, setSearch] = useState('');
   const [errorOnSearch, setOnErrorSearch] = useState(false);
@@ -209,10 +312,6 @@ export const HomeScreen = ({navigation}) => {
   }, []);
 
   useEffect(() => {
-    console.log(shows.length > 0 && !firstLoading);
-    console.log(shows.length);
-    console.log(firstLoading);
-    console.log(showsPlaceholderList);
     return () => {
       clearTimeout(timeoutToClear);
     };
@@ -228,40 +327,85 @@ export const HomeScreen = ({navigation}) => {
     searchShowsByName({search: text});
   };
 
+  const searchPeopleFn = async text => {
+    console.log('ready to searchPeople text ===>', text);
+    setSearch(text);
+    fetchPeople({search: text});
+  };
+
   const debouncedSearchShows = debounce(searchShows, setSearchTextAlways, 200);
+  const debouncedSearchPeople = debounce(
+    searchPeopleFn,
+    setSearchTextAlways,
+    200,
+  );
+
+  const handleCheckboxChange = () => {
+    setSearch('');
+    setSearchPeople(!searchPeople);
+  };
 
   return (
     <SafeAreaView style={[backgroundStyle, {flex: 1}]}>
-      <TextInput
-        label="Breaking Bad, The Walking Dead or their cast..."
-        style={[
-          {
-            borderWidth: 0,
+      <View
+        style={{
+          flexDirection: 'row',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          marginTop: 30,
+          marginBottom: 10,
+          marginHorizontal: 20,
+        }}>
+        <TextInput
+          label={
+            !searchPeople
+              ? 'Breaking Bad, Suits, Attack on Titan...'
+              : 'Bryan Cranston, Brad Pitt, DiCaprio...'
+          }
+          activeUnderlineColor={Colors.star}
+          style={[
+            {
+              borderWidth: 0,
+              width: '70%',
 
-            marginTop: 40,
-            marginBottom: 10,
-            marginHorizontal: 20,
-            paddingHorizontal: 10,
-          },
-          createShadow(isDarkMode),
-          backgroundStyle,
-        ]}
-        error={errorOnSearch}
-        value={search}
-        right={
-          search && (
-            <TextInput.Icon
-              onPress={() => {
-                handleChange('');
-              }}
-              icon="close-circle"
-              color={'grey'}
+              paddingHorizontal: 10,
+            },
+            createShadow(isDarkMode),
+            backgroundStyle,
+          ]}
+          error={errorOnSearch}
+          value={search}
+          right={
+            search && (
+              <TextInput.Icon
+                onPress={() => {
+                  handleChange('');
+                }}
+                icon="close-circle"
+                color={'grey'}
+              />
+            )
+          }
+          onChangeText={text => handleChange(text)}
+          //value={search}
+        />
+        {!loading && (
+          <TouchableOpacity
+            style={{
+              flexDirection: 'row',
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
+            onPress={handleCheckboxChange}>
+            <MaterialCommunityIcons name={'account-search'} size={25} />
+            <Checkbox
+              status={searchPeople ? 'checked' : 'unchecked'}
+              onPress={handleCheckboxChange}
+              color={Colors.star}
             />
-          )
-        }
-        onChangeText={text => handleChange(text)}
-        //value={search}
-      />
+          </TouchableOpacity>
+        )}
+      </View>
       {errorOnSearch && (
         <View>
           <Text style={{color: 'red', marginHorizontal: 10}}>
@@ -271,25 +415,28 @@ export const HomeScreen = ({navigation}) => {
       )}
 
       <FlatList
-        data={shows.length > 0 && !firstLoading ? shows : showsPlaceholderList}
+        data={!searchPeople ? shows : people}
         ref={flatListRef}
-        renderItem={renderItem}
+        renderItem={!searchPeople ? renderItem : renderPerson}
         keyExtractor={item => item.id.toString()}
         onEndReached={() => {
-          if (search === '') handleLoadMore;
+          console.log('onEndReached');
+          if (search === '' && !searchPeople) {
+            handleLoadMore();
+          } else console.log('el search parece no estar vacio ', search);
         }}
         maxToRenderPerBatch={25}
         onEndReachedThreshold={0.1}
-        /* ListEmptyComponent={() => (
+        ListEmptyComponent={() => (
           <View style={{alignItems: 'center'}}>
             <Text>Oops, there are no results for {search}.</Text>
           </View>
-        )} */
-        /* ListFooterComponent={() => {
+        )}
+        ListFooterComponent={() => {
           if (loading && hasMore) {
             return (
-              <View style={{marginTop: 20}}>
-                <ActivityIndicator size="large" color="#0000ff" />
+              <View style={{marginVertical: 20}}>
+                <ActivityIndicator size="large" color={Colors.star} />
               </View>
             );
           } else if (errorOnFetch) {
@@ -308,7 +455,7 @@ export const HomeScreen = ({navigation}) => {
           } else {
             return null;
           }
-        }} */
+        }}
       />
     </SafeAreaView>
   );

@@ -1,8 +1,8 @@
 import {useRef, useState, useCallback, useMemo} from 'react';
 // TODO SERVICE FOR SHOWS import {searchShows, getShowsByPage} from '../services/shows';
-import {Alert} from 'react-native';
 export function useShows({search, sort, currentPage}) {
   const [shows, setShows] = useState([]);
+  const [show, setShow] = useState({});
   const [episodesBySeason, setEpisodesBySeason] = useState([]);
   const [loading, setLoading] = useState(true);
   const [firstLoading, setFirstLoading] = useState(true);
@@ -65,7 +65,7 @@ export function useShows({search, sort, currentPage}) {
       console.log(`https://api.tvmaze.com/shows/${id}/episodes`);
       const data = await response.json();
       if (data.length > 0) {
-        console.log(data);
+        //console.log(data);
         const groupedEpisodes = groupEpisodesBySeason(data); // Llamada a la función para agrupar episodios por temporada
         setEpisodesBySeason(groupedEpisodes);
       } /* else {
@@ -101,6 +101,26 @@ export function useShows({search, sort, currentPage}) {
     }
   };
 
+  const fetchShowById = async ({search}) => {
+    try {
+      setLoading(true);
+      const response = await fetch(
+        `https://api.tvmaze.com/search/shows?q=${search}`,
+      );
+      previousSearch.current = search;
+      console.log(
+        `Voy a buscar en fetchShowById ===> https://api.tvmaze.com/shows/${search}?embed=episodes`,
+      );
+      const data = await response.json();
+      console.log(data);
+      setShow(data);
+      setLoading(false);
+    } catch (error) {
+      console.error('Error searching shows:', error);
+      setLoading(false);
+    }
+  };
+
   const sortedShows = useMemo(() => {
     return sort
       ? [...shows].sort((a, b) => a.title.localeCompare(b.title))
@@ -114,6 +134,8 @@ export function useShows({search, sort, currentPage}) {
     searchShowsByName,
     fetchShows,
     fetchEpisodes,
+    fetchShowById,
+    showById: show,
     episodesBySeason,
     firstLoading,
   };

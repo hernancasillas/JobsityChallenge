@@ -21,7 +21,7 @@ import Colors from '../../constants/colors';
 import LinearGradient from 'react-native-linear-gradient';
 import {removeHtmlTags} from '../../utils/helperFunctions';
 
-export const EpisodeScreen = ({navigation, route}) => {
+export const FavoritesEpisodeScreen = ({navigation, route}) => {
   const {episode} = route.params;
   const isDarkMode = useColorScheme() === 'dark';
 
